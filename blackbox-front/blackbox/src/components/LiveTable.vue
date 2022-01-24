@@ -6,10 +6,11 @@
         <div
           class="record__databyte"
           v-for="(byte, index) in record.data"
-          :key="index"
           :class="{ 'record__databyte--changed': record.diff[index] }"
+          :key="byte"
         >
-          {{ byte }}
+          <!-- Little hack for fluent indication of changes -->
+          <div class="change-indicator">{{ byte }}</div>
         </div>
       </div>
       <!-- <div
@@ -29,11 +30,12 @@
 <script lang="ts">
 import { Vue } from "vue-class-component";
 import { useStore } from "@/store";
+import { CANLiveRecord } from "@/types/CANLive";
 
 export default class LiveTable extends Vue {
   store = useStore();
 
-  get liveTable(): number {
+  get liveTable(): CANLiveRecord {
     return this.store.state.liveTable;
   }
 }
@@ -41,17 +43,25 @@ export default class LiveTable extends Vue {
 
 <style scoped lang="scss">
 .record {
-  display: flex;
   font-family: monospace;
+  display: flex;
   gap: 5px;
+
   &__data {
     display: flex;
     gap: 2px;
   }
-  &__databyte {
-    &--changed {
-      background-color: #aaa;
-    }
+}
+.change-indicator {
+  animation: 1s change-blink;
+}
+
+@keyframes change-blink {
+  from {
+    background-color: rgb(1, 139, 47);
+  }
+  to {
+    background-color: transparent;
   }
 }
 </style>
