@@ -1,5 +1,9 @@
 <template>
-  <div class="home"><LiveTable /></div>
+  <div class="live-view">
+    <div class="live-table">
+      <LiveTable />
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -20,3 +24,15 @@ export default class Home extends Vue {
   }
 }
 </script>
+<style scoped lang="scss">
+.live-view {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 20px;
+  padding: 20px;
+}
+.live-table {
+  grid-column: 1/8;
+}
+</style>

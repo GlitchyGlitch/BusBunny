@@ -1,7 +1,7 @@
 interface CANLiveRecord {
   pid: string;
   data: [string];
-  diff: [boolean];
+  print: string;
   ctrl: [boolean];
   ts: number;
   int: number;

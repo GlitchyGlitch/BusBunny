@@ -1,23 +1,29 @@
 <template>
   <div class="live-table">
+    <div class="record">
+      <div class="record__pid">PID</div>
+      <div>Ts</div>
+      <div>Int</div>
+      <div>Count</div>
+      <div class="record__data">Data</div>
+      <div class="">Printable</div>
+    </div>
     <div class="record" v-for="(record, pid) in liveTable" :key="pid">
       <div class="record__pid">{{ pid }}</div>
       <div>{{ record.ts }}</div>
       <div>{{ record.int }}</div>
       <div>{{ record.count }}</div>
       <div class="record__data">
-        <div class="record__databyte" v-for="byte in record.data" :key="byte">
+        <div
+          class="record__databyte"
+          v-for="(byte, index) in record.data"
+          :key="index"
+        >
           <!-- Little hack for fluent indication of changes -->
-          <div class="change-indicator">{{ byte }}</div>
+          <div class="change-indicator" :key="byte">{{ byte }}</div>
         </div>
       </div>
-      <!-- <div
-        class="record__data"
-        v-for="(flag, index) in record.diff"
-        :key="index"
-      >
-        {{ flag }}
-      </div> -->
+      <div>{{ record.print }}</div>
     </div>
   </div>
 </template>
@@ -37,18 +43,24 @@ export default class LiveTable extends Vue {
 </script>
 
 <style scoped lang="scss">
+.live-table {
+  background-color: #222;
+  padding: 20px;
+  font-family: "JetBrains Mono", monospace;
+}
+
 .record {
-  font-family: monospace;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 65px) 220px 150px;
   gap: 5px;
 
   &__data {
     display: flex;
-    gap: 2px;
+    gap: 5px;
   }
 }
 .change-indicator {
-  animation: 1s change-blink;
+  animation: 1.2s change-blink;
 }
 
 @keyframes change-blink {
