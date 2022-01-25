@@ -1,7 +1,10 @@
 <template>
   <div class="nav">
-    <router-link to="/">Live</router-link> |
-    <router-link to="/about">Log</router-link>
+    <img src="@/assets/logo.svg" alt="" />
+    <div class="nav__menu">
+      <router-link to="/">Live</router-link>
+      <router-link to="/log">Log</router-link>
+    </div>
   </div>
   <router-view />
 </template>
@@ -15,5 +18,14 @@
 }
 .nav {
   padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #111;
+
+  &__menu {
+    display: flex;
+    gap: 20px;
+  }
 }
 </style>
