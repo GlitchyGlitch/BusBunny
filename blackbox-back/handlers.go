@@ -27,7 +27,6 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 				"pid": "01F",
 				"data": ["0A", "12", "BA"],
 				"ctrl": [true, true, true, false, false, false],
-				"diff": [false, false, false, false, false, false],
 				"ts": 123,
 				"int": 100,
 				"count": 20
@@ -35,12 +34,11 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 			if err != nil {
 				return
 			}
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			err = wsc.Send([]byte(`{
 				"pid": "01F",
 				"data": ["AC", "12", "BA"],
 				"ctrl": [true, false, false, false, false, false],
-				"diff": [false, false, false, false, false, false],
 				"ts": 123,
 				"int": 100,
 				"count": 20
@@ -48,12 +46,11 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 			if err != nil {
 				return
 			}
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			err = wsc.Send([]byte(`{
 				"pid": "AF1",
 				"data": ["AC", "12", "BA", "FF"],
 				"ctrl": [true, false, false, false, false, false],
-				"diff": [true, false, false, false, false, false],
 				"ts": 123,
 				"int": 100,
 				"count": 20
@@ -61,7 +58,7 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 			if err != nil {
 				return
 			}
-			time.Sleep(1000 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

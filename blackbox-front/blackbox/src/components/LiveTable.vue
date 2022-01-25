@@ -2,13 +2,11 @@
   <div class="live-table">
     <div class="record" v-for="(record, pid) in liveTable" :key="pid">
       <div class="record__pid">{{ pid }}</div>
+      <div>{{ record.ts }}</div>
+      <div>{{ record.int }}</div>
+      <div>{{ record.count }}</div>
       <div class="record__data">
-        <div
-          class="record__databyte"
-          v-for="(byte, index) in record.data"
-          :class="{ 'record__databyte--changed': record.diff[index] }"
-          :key="byte"
-        >
+        <div class="record__databyte" v-for="byte in record.data" :key="byte">
           <!-- Little hack for fluent indication of changes -->
           <div class="change-indicator">{{ byte }}</div>
         </div>
@@ -20,9 +18,6 @@
       >
         {{ flag }}
       </div> -->
-      <div>{{ record.ts }}</div>
-      <div>{{ record.int }}</div>
-      <div>{{ record.count }}</div>
     </div>
   </div>
 </template>
