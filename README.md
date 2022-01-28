@@ -11,11 +11,11 @@ Live:
 ```json
 {
   "pid": "01F",
-  "data": ["41", "41", "41", "41", "..", "..", ".."],
+  "data": ["41", "41", "41", "41", "..", "..", "..", ".."],
   "ctrl": [true, true, true, false, false, false],
   "print": "AAAA....",
   "ts": 123,
-  "int": 100,
+  "tsdiff": 100,
   "count": 20
 }
 ```

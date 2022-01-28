@@ -1,0 +1,14 @@
+FROM idf:latest
+ENV BUILD_USER build
+ENV SRC_PATH /usr/src/fw-src
+ENV BUILD_PATH /usr/src/fw-build
+
+RUN groupadd $BUILD_USER && useradd -m -g $BUILD_USER -l $BUILD_USER
+RUN mkdir -p $SRC_PATH $BUILD_PATH && chown -R $BUILD_USER:$BUILD_USER $APP_HOME SRC_PATH
+
+USER $BUILD_USER
+WORKDIR $SRC_HOME
+COPY firmware/ .
+ADD build/ $BUILD_PATH
+
+RUN idf.py build

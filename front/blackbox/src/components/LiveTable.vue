@@ -60,15 +60,19 @@ export default class LiveTable extends Vue {
   }
 }
 .change-indicator {
+  border: transparent solid 1px;
+
   animation: 1.2s change-blink;
 }
 
 @keyframes change-blink {
   from {
-    background-color: rgb(1, 139, 47);
+    background-color: #4200ff;
+    border: #777 solid 1px;
   }
   to {
     background-color: transparent;
+    border: transparent solid 1px;
   }
 }
 </style>
