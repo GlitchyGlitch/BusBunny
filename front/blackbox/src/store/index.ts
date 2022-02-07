@@ -1,10 +1,10 @@
 import { InjectionKey } from "vue";
 import { createStore, useStore as baseUseStore, Store } from "vuex";
-import { CANLiveTable, CANLiveRecord } from "@/types/CANLive";
+import { IfaceLiveTable, IfaceLiveRecord } from "@/types/IfaceLive";
 
 interface State {
   isBackendUp: boolean;
-  liveTable: CANLiveTable;
+  liveTable: IfaceLiveTable;
 }
 
 export const key: InjectionKey<Store<State>> = Symbol();
@@ -15,8 +15,8 @@ export const store = createStore<State>({
     liveTable: {},
   },
   mutations: {
-    liveTablePush(state, record: CANLiveRecord): void {
-      state.liveTable[record.pid] = record;
+    liveTablePush(state, record: IfaceLiveRecord): void {
+      state.liveTable[record.id] = record;
       console.log(state.liveTable);
     },
     turnBackendState(state): void {
@@ -27,7 +27,7 @@ export const store = createStore<State>({
     turnBackendState({ commit }): void {
       commit("turnBackendState");
     },
-    liveTablePush({ commit }, record: CANLiveRecord): void {
+    liveTablePush({ commit }, record: IfaceLiveRecord): void {
       commit("liveTablePush", record);
     },
   },

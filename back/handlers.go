@@ -25,7 +25,7 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 		go wsc.ReadPump()
 		for {
 			err := wsc.Send([]byte(`{
-				"pid": "01F",
+				"id": "01F",
 				"data": ["0A", "12", "BA", "0A", "..", "..", ".."],
 				"ctrl": [true, true, true, false, false, false],
 				"print": ".Aśc.<",
@@ -38,7 +38,7 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 			}
 			time.Sleep(1700 * time.Millisecond)
 			err = wsc.Send([]byte(`{
-				"pid": "01F",
+				"id": "01F",
 				"data": ["0A", "FF", "BA", "0A", "FF", "..", ".."],
 				"ctrl": [true, true, true, false, false, false],
 				"print": ".Arc.?",
@@ -51,7 +51,7 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 			}
 			time.Sleep(1700 * time.Millisecond)
 			err = wsc.Send([]byte(`{
-				"pid": "612",
+				"id": "612",
 				"data": ["0A", "FF", "BA", "0A", "FF", "..", ".."],
 				"ctrl": [true, true, true, false, false, false],
 				"print": ".Arc.?",

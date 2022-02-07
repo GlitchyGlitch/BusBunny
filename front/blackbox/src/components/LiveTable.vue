@@ -1,15 +1,15 @@
 <template>
   <div class="live-table">
     <div class="record">
-      <div class="record__pid">PID</div>
+      <div class="record__id">ID</div>
       <div>Ts</div>
       <div>Int</div>
       <div>Count</div>
       <div class="record__data">Data</div>
       <div class="">Printable</div>
     </div>
-    <div class="record" v-for="(record, pid) in liveTable" :key="pid">
-      <div class="record__pid">{{ pid }}</div>
+    <div class="record" v-for="(record, id) in liveTable" :key="id">
+      <div class="record__id">{{ id }}</div>
       <div>{{ record.ts }}</div>
       <div>{{ record.int }}</div>
       <div>{{ record.count }}</div>
@@ -31,12 +31,12 @@
 <script lang="ts">
 import { Vue } from "vue-class-component";
 import { useStore } from "@/store";
-import { CANLiveRecord } from "@/types/CANLive";
+import { IfaceLiveRecord } from "@/types/IfaceLive";
 
 export default class LiveTable extends Vue {
   store = useStore();
 
-  get liveTable(): CANLiveRecord {
+  get liveTable(): IfaceLiveRecord {
     return this.store.state.liveTable;
   }
 }

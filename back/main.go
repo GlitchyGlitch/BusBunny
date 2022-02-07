@@ -47,6 +47,7 @@ func main() {
 
 	<-c
 
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, close := context.WithTimeout(context.Background(), 30*time.Second)
 	s.Shutdown(ctx)
+	close()
 }

@@ -1,6 +1,65 @@
-#include <stdio.h>
+#include "driver/gpio.h"
+#include "driver/can.h"
 
-void app_main(void)
+#define DRIVER_E
+
+typedef struct
 {
 
+} CANSiimplePDU;
+
+void app_main()
+{
+  //Initialize configuration structures using macro initializers
+  can_general_config_t g_config = CAN_GENERAL_CONFIG_DEFAULT(GPIO_NUM_21, GPIO_NUM_22, CAN_MODE_NO_ACK);
+  can_timing_config_t t_config = CAN_TIMING_CONFIG_500KBITS();
+  can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
+
+  //Install CAN driver
+  if (can_driver_install(&g_config, &t_config, &f_config) == ESP_OK)
+  {
+    printf("Driver installed\n");
+  }
+  else
+  {
+    printf("Failed to install driver\n");
+    return;
+  }
+
+  //Start CAN driver
+  if (can_start() == ESP_OK)
+  {
+    printf("Driver started\n");
+  }
+  else
+  {
+    printf("Failed to start driver\n");
+    return;
+  }
+
+  //Wait for message to be received
+  can_message_t message;
+  if (can_receive(&message, pdMS_TO_TICKS(10000)) == ESP_OK)
+  {
+    printf("Message received\n");
+  }
+  else
+  {
+    printf("Failed to receive message\n");
+    return;
+  }
+
+  //Process received message
+  if (message.flags & CAN_MSG_FLAG_EXTD)
+  {
+    printf("Message is in Extended Format\n");
+  }
+  else
+  {
+    printf("Message is in Standard Format\n");
+  }
+  printf("ID is %d\n", message.identifier);
+  if (!(message.flags & CAN_MSG_FLAG_RTR)) for
+      action |
+}
 }
