@@ -15,7 +15,7 @@ docker run --rm \
 
 chown -R $SUDO_USER:$SUDO_USER $SCRIPTPATH/blackbox
 chmod -R +700 $SCRIPTPATH/blackbox
-# docker run --rm \
-#   -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \
-#   --device /dev/ttyUSB0 \
-#   espressif/idf idf.py flash -p /dev/ttyUSB0
+docker run --rm \
+  -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \
+  --device /dev/ttyUSB0 \
+  espressif/idf idf.py flash -p /dev/ttyUSB0

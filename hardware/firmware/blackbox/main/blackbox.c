@@ -21,9 +21,9 @@ static void tcp_server_task(void *pvParameters);
 void wifi_init_ap();
 char *getTagValue(char *a_tag_list, char *a_tag);
 
-#define ESP_AP_SSID "BlackBox" //Ssid for ESP32 access point
-#define ESP_AP_PASS "BlackBox" //password for ESP32 access point
-#define ESP_AP_MAX_CONNECT 1   //Maximum stations that can connect to ESP32
+#define ESP_AP_SSID "BlackBox" // Ssid for ESP32 access point
+#define ESP_AP_PASS "BlackBox" // password for ESP32 access point
+#define ESP_AP_MAX_CONNECT 1   // Maximum stations that can connect to ESP32
 #define PORT 9000
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
@@ -44,17 +44,17 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
   switch (event->event_id)
   {
-  case SYSTEM_EVENT_AP_STACONNECTED: //When new stations connects to AP (ESP32), display MAC address and AID
+  case SYSTEM_EVENT_AP_STACONNECTED: // When new stations connects to AP (ESP32), display MAC address and AID
     ESP_LOGI(TAG_AP, "station:" MACSTR " join, AID= %d",
              MAC2STR(event->event_info.sta_connected.mac),
              event->event_info.sta_connected.aid);
     break;
 
-  case SYSTEM_EVENT_AP_STADISCONNECTED: //When stations disconnect from AP (ESP32), display deisconnected stations' MAC and AID
+  case SYSTEM_EVENT_AP_STADISCONNECTED: // When stations disconnect from AP (ESP32), display deisconnected stations' MAC and AID
     ESP_LOGI(TAG_AP, "station:" MACSTR "leave, AID= %d",
              MAC2STR(event->event_info.sta_disconnected.mac),
              event->event_info.sta_disconnected.aid);
-    //On disconnet, close TCP socket client
+    // On disconnet, close TCP socket client
     if (client_socket != -1)
     {
       ESP_LOGE(TAG, "Shutting down socket and restarting...");
@@ -71,16 +71,16 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 
 void wifi_init_ap()
 {
-  wifi_event_group = xEventGroupCreate(); //Create listener thread
+  wifi_event_group = xEventGroupCreate(); // Create listener thread
 
-  esp_netif_init();                                          //Initialise lwIP
-  ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL)); //Start event_handler loop
+  esp_netif_init();                                          // Initialise lwIP
+  ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL)); // Start event_handler loop
 
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //Create instance of wifi_init_config_t cfg, and assign default values to all members
-  ESP_ERROR_CHECK(esp_wifi_init(&cfg));                //Initialise instance of wifi_init_config_t
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); // Create instance of wifi_init_config_t cfg, and assign default values to all members
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));                // Initialise instance of wifi_init_config_t
 
   wifi_config_t wifi_config_ap = {
-      //Set configuration parameters for AP mode
+      // Set configuration parameters for AP mode
       .ap = {
           .ssid = ESP_AP_SSID,
           .ssid_len = strlen(ESP_AP_SSID),
@@ -90,19 +90,19 @@ void wifi_init_ap()
       },
   };
 
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));                      //Set Wifi mode as AP+Station
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap)); //Initialise AP configuration
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));                      // Set Wifi mode as AP+Station
+  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap)); // Initialise AP configuration
   ESP_LOGI(TAG_AP, "wifi_init_ap finished SSID: %s, password: %s",
-           ESP_AP_SSID, ESP_AP_PASS); //Print what credentials the ESP32 is broadcasting as an AP
+           ESP_AP_SSID, ESP_AP_PASS); // Print what credentials the ESP32 is broadcasting as an AP
 
-  ESP_ERROR_CHECK(esp_wifi_start()); //Start the Wifi driver
+  ESP_ERROR_CHECK(esp_wifi_start()); // Start the Wifi driver
 }
 
 static void tcp_server_task(void *pvParameters)
 {
   netsrv_t net;
   netsrv_create(
-      &net, (ipstr_t){"127.0.0.1"}, 2000);
+      &net, (ipstr_t){"0.0.0.0"}, 2000);
   // for (;;)
   // {
   //   for (;;)

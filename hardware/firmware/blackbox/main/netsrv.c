@@ -10,10 +10,11 @@ static const char *TAG = "netsrv";
 
 esp_err_t netsrv_create(netsrv_t *net, ipstr_t ip, uint16_t port)
 {
-  net->ip.bytes = ip;
+  net->ip = ip;
   inet_ntoa_r(net->dst_addr.sin_addr, net->ip.bytes, sizeof(ip) - 1);
-  net->dst_addr.sin_family = AF_INET;   //Define address family as Ipv4
-  net->dst_addr.sin_port = htons(port); //Define PORT
+  net->dst_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  net->dst_addr.sin_family = AF_INET;   // Define address family as Ipv4
+  net->dst_addr.sin_port = htons(port); // Define PORT
 
   net->socket_id = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (net->socket_id < 0)
@@ -30,7 +31,7 @@ esp_err_t netsrv_create(netsrv_t *net, ipstr_t ip, uint16_t port)
     return NETSRV_ERR_BIND;
   }
   ESP_LOGI(TAG, "Socket binded");
-  ESP_LOGI(TAG, "IPv4:%s", ip);
+  ESP_LOGI(TAG, "IPv4:%s", ip.bytes);
   ESP_LOGI(TAG, "Port:%d", port);
   return NETSRV_OK;
 }
