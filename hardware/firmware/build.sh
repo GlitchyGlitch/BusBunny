@@ -7,14 +7,15 @@ if [ "$EUID" -ne 0 ]; then
   echo "Please run as root."
   exit
 fi
+rm -rf $SCRIPTPATH/blackbox/build
 
 docker run --rm \
-  -v $SCRIPTPATH/firmware/blackbox:/blackbox -w /blackbox \
+  -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \
   espressif/idf idf.py build
 
-chown -R $SUDO_USER:$SUDO_USER $SCRIPTPATH/firmware/blackbox
-chmod -R +700 $SCRIPTPATH/firmware/blackbox
+chown -R $SUDO_USER:$SUDO_USER $SCRIPTPATH/blackbox
+chmod -R +700 $SCRIPTPATH/blackbox
 # docker run --rm \
-#   -v $PWD/firmware/blackbox:/blackbox -w /blackbox \
+#   -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \
 #   --device /dev/ttyUSB0 \
 #   espressif/idf idf.py flash -p /dev/ttyUSB0
