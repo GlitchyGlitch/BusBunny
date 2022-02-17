@@ -30,7 +30,7 @@ netsrv_err_t netsrv_create(netsrv_t *net, ipstr_t ip, uint16_t port)
     ESP_LOGE(TAG, "Socket unable to bind: errno %d", errno);
     return NETSRV_ERR_BIND;
   }
-  ESP_LOGI(TAG, "Socket binded");
+  ESP_LOGI(TAG, "Socket bound");
   ESP_LOGI(TAG, "IPv4:%s", ip.bytes);
   ESP_LOGI(TAG, "Port:%d", port);
   return NETSRV_OK;
