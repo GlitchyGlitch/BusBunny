@@ -16,11 +16,6 @@
 
 #include <lwip/netdb.h>
 
-static esp_err_t event_handler(void *ctx, system_event_t *event);
-static void tcp_server_task(void *pvParameters);
-void wifi_init_ap();
-char *getTagValue(char *a_tag_list, char *a_tag);
-
 #define ESP_AP_SSID "BlackBox" // Ssid for ESP32 access point
 #define ESP_AP_PASS "BlackBox" // password for ESP32 access point
 #define ESP_AP_MAX_CONNECT 1   // Maximum stations that can connect to ESP32
@@ -29,55 +24,47 @@ char *getTagValue(char *a_tag_list, char *a_tag);
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifi_event_group;
 
-const int IPV4_GOTIP_BIT = BIT0;
-
 static const char *TAG_AP = "ap";
 static const char *TAG = "TCP/IP socket";
 
-uint32_t client_socket;
+int32_t client_socket;
 int ip_protocol;
 int socket_id;
 int bind_err;
 int listen_error;
 
-static esp_err_t event_handler(void *ctx, system_event_t *event)
+// TODO: switch
+static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data)
 {
-  switch (event->event_id)
+  if (event_id == WIFI_EVENT_AP_STACONNECTED)
   {
-  case SYSTEM_EVENT_AP_STACONNECTED: // When new stations connects to AP (ESP32), display MAC address and AID
-    ESP_LOGI(TAG_AP, "station:" MACSTR " join, AID= %d",
-             MAC2STR(event->event_info.sta_connected.mac),
-             event->event_info.sta_connected.aid);
-    break;
-
-  case SYSTEM_EVENT_AP_STADISCONNECTED: // When stations disconnect from AP (ESP32), display deisconnected stations' MAC and AID
-    ESP_LOGI(TAG_AP, "station:" MACSTR "leave, AID= %d",
-             MAC2STR(event->event_info.sta_disconnected.mac),
-             event->event_info.sta_disconnected.aid);
-    // On disconnet, close TCP socket client
-    if (client_socket != -1)
-    {
-      ESP_LOGE(TAG, "Shutting down socket and restarting...");
-      shutdown(client_socket, 0);
-      close(client_socket);
-    }
-    break;
-
-  default:
-    break;
+    wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
+    ESP_LOGI(TAG, "station " MACSTR " join, AID=%d",
+             MAC2STR(event->mac), event->aid);
   }
-  return ESP_OK;
+  else if (event_id == WIFI_EVENT_AP_STADISCONNECTED)
+  {
+    wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
+    ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
+             MAC2STR(event->mac), event->aid);
+  }
 }
 
 void wifi_init_ap()
 {
-  wifi_event_group = xEventGroupCreate(); // Create listener thread
+  ESP_ERROR_CHECK(esp_netif_init());
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  esp_netif_create_default_wifi_ap();
 
-  esp_netif_init();                                          // Initialise lwIP
-  ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL)); // Start event_handler loop
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); // Create instance of wifi_init_config_t cfg, and assign default values to all members
-  ESP_ERROR_CHECK(esp_wifi_init(&cfg));                // Initialise instance of wifi_init_config_t
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                      ESP_EVENT_ANY_ID,
+                                                      &wifi_event_handler,
+                                                      NULL,
+                                                      NULL));
 
   wifi_config_t wifi_config_ap = {
       // Set configuration parameters for AP mode
@@ -100,15 +87,18 @@ void wifi_init_ap()
 
 static void tcp_server_task(void *pvParameters)
 {
+
   netsrv_t net;
   netsrv_create(
-      &net, (ipstr_t){"0.0.0.0"}, 2000);
+      &net, (ipstr_t){"0.0.0.0"}, 9000);
+  netsrv_listen(&net);
+  netsrv_accept_thread(&net);
+
+  // netsrv_accept_thread(&net);
   // for (;;)
   // {
   //   for (;;)
   //   {
-  //     struct sockaddr_in sourceAddr; // Large enough for IPv4
-  //     uint addrLen = sizeof(sourceAddr);
   //     /* Accept connection to incoming client */
   //     client_socket = accept(socket_id, (struct sockaddr *)&sourceAddr, &addrLen);
   //     if (client_socket < 0)
