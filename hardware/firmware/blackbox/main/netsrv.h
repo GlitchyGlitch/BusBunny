@@ -13,13 +13,12 @@ typedef struct ipstr
 
 typedef struct netsrv
 {
-  char rx_buffer[512];    // char array to store received data
-  ipstr_t ip;             // char array to store client IP
-  int32_t bytes_received; // immediate bytes received
-  sockfd_t socket_fd;
+  size_t rx_buffer_size;
+  ipstr_t ip; // char array to store client IP
+  sockfd_t sockfd;
   struct sockaddr_in dst_addr;
 } netsrv_t;
 
-esp_err_t netsrv_create(netsrv_t *net, ipstr_t ip, uint16_t port);
-esp_err_t netsrv_listen(netsrv_t *net);
-esp_err_t netsrv_accept_thread(netsrv_t *net);
+netsrv_err_t netsrv_create(netsrv_t *net, ipstr_t ip, uint16_t port, size_t rx_buffer_size);
+netsrv_err_t netsrv_listen(netsrv_t *net);
+void netsrv_accept_task(void *net);

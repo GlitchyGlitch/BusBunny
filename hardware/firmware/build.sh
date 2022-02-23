@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
   echo "Please run as root."
   exit
 fi
-rm -rf $SCRIPTPATH/blackbox/build
+# rm -rf $SCRIPTPATH/blackbox/build
 
 docker run --rm \
   -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \

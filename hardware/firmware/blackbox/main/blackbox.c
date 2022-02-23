@@ -21,19 +21,8 @@
 #define ESP_AP_MAX_CONNECT 1   // Maximum stations that can connect to ESP32
 #define PORT 9000
 
-/* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
+static const char *TAG = "wifi_ap";
 
-static const char *TAG_AP = "ap";
-static const char *TAG = "TCP/IP socket";
-
-int32_t client_socket;
-int ip_protocol;
-int socket_id;
-int bind_err;
-int listen_error;
-
-// TODO: switch
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
@@ -77,88 +66,19 @@ void wifi_init_ap()
       },
   };
 
-  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));                      // Set Wifi mode as AP+Station
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap)); // Initialise AP configuration
-  ESP_LOGI(TAG_AP, "wifi_init_ap finished SSID: %s, password: %s",
-           ESP_AP_SSID, ESP_AP_PASS); // Print what credentials the ESP32 is broadcasting as an AP
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap));
+  ESP_LOGI(TAG, "AccessPoint initialized");
 
   ESP_ERROR_CHECK(esp_wifi_start()); // Start the Wifi driver
 }
-
-static void tcp_server_task(void *pvParameters)
-{
-
-  netsrv_t net;
-  netsrv_create(
-      &net, (ipstr_t){"0.0.0.0"}, 9000);
-  netsrv_listen(&net);
-  netsrv_accept_thread(&net);
-
-  // netsrv_accept_thread(&net);
-  // for (;;)
-  // {
-  //   for (;;)
-  //   {
-  //     /* Accept connection to incoming client */
-  //     client_socket = accept(socket_id, (struct sockaddr *)&sourceAddr, &addrLen);
-  //     if (client_socket < 0)
-  //     {
-  //       ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
-  //       break;
-  //     }
-  //     ESP_LOGI(TAG, "Socket accepted");
-
-  //     //Optionally set O_NONBLOCK
-  //     //If O_NONBLOCK is set then recv() will return, otherwise it will stall until data is received or the connection is lost.
-  //     //fcntl(client_socket,F_SETFL,O_NONBLOCK);
-
-  //     // Clear rx_buffer, and fill with zero's
-  //     bzero(rx_buffer, sizeof(rx_buffer));
-  //     vTaskDelay(500 / portTICK_PERIOD_MS);
-  //     for (;;)
-  //     {
-  //       ESP_LOGI(TAG, "Waiting for data");
-  //       bytes_received = recv(client_socket, rx_buffer, sizeof(rx_buffer) - 1, 0);
-  //       ESP_LOGI(TAG, "Received Data");
-
-  //       // Error occured during receiving
-  //       if (bytes_received < 0)
-  //       {
-  //         ESP_LOGI(TAG, "Waiting for data");
-  //         vTaskDelay(100 / portTICK_PERIOD_MS);
-  //       }
-  //       // Connection closed
-  //       else if (bytes_received == 0)
-  //       {
-  //         ESP_LOGI(TAG, "Connection closed");
-  //         break;
-  //       }
-  //       // Data received
-  //       else
-  //       {
-  //         // Get the sender's ip address as string
-  //         if (sourceAddr.sin_family == PF_INET)
-  //         {
-  //           inet_ntoa_r(((struct sockaddr_in *)&sourceAddr)->sin_addr.s_addr, addr_str, sizeof(addr_str) - 1);
-  //         }
-
-  //         rx_buffer[bytes_received] = 0; // Null-terminate whatever we received and treat like a string
-  //         ESP_LOGI(TAG, "Received %d bytes from %s:", bytes_received, addr_str);
-  //         ESP_LOGI(TAG, "%s", rx_buffer);
-  //         // TODO: Data handling
-
-  //         // Clear rx_buffer, and fill with zero's
-  //         bzero(rx_buffer, sizeof(rx_buffer));
-  //       }
-  //     }
-  //   }
-  // }
-  vTaskDelete(NULL);
-}
-
 void app_main()
 {
   ESP_ERROR_CHECK(nvs_flash_init());
   wifi_init_ap();
-  xTaskCreate(tcp_server_task, "tcp_server", 4096, NULL, 5, NULL);
+  netsrv_t net;
+  netsrv_create(
+      &net, (ipstr_t){"0.0.0.0"}, 9000, 128);
+  netsrv_listen(&net);
+  xTaskCreate(netsrv_accept_task, "netsrv", 16384, (void *)&net, 1, NULL);
 }
