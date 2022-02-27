@@ -3,16 +3,18 @@
 #include <stdint.h>
 #include "sdkconfig.h"
 
+#include "netdrv.h"
+#include "system.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-
-#include "netsrv.h"
 
 #include <lwip/netdb.h>
 
@@ -76,9 +78,25 @@ void app_main()
 {
   ESP_ERROR_CHECK(nvs_flash_init());
   wifi_init_ap();
-  netsrv_t net;
-  netsrv_create(
+  netdrv_t net;
+  netdrv_create(
       &net, (ipstr_t){"0.0.0.0"}, 9000, 128);
-  netsrv_listen(&net);
-  xTaskCreate(netsrv_accept_task, "netsrv", 16384, (void *)&net, 1, NULL);
+  netdrv_listen(&net);
+  for (;;)
+  {
+    net_queue_t queue;
+    char rx_buffer[200];
+    queue = netdrv_accept(&net);
+    if (queue.err != NETDRV_OK)
+    {
+      esp_panic();
+    }
+    // TODO: message as struct
+    for (;;)
+    {
+      BaseType_t ok = xQueueReceive(queue.queue_recv, &rx_buffer, (TickType_t)10);
+      if (ok == pdTRUE)
+        ESP_LOGI(TAG, "recv: %s", rx_buffer);
+    }
+  }
 }

@@ -1,0 +1,6 @@
+#pragma once
+#define NETDRV_OK 0
+#define NETDRV_ERR_CREATE 0x200
+#define NETDRV_ERR_BIND 0x201
+#define NETDRV_ERR_LISTEN 0x202
+#define NETDRV_ERR_ACCEPT 0x203
