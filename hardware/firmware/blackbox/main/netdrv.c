@@ -60,22 +60,20 @@ static void handle_send(void *task_param)
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
   char tx_buffer[200]; // TODO: chceck size
+  bool error = false;
 
-  for (;;)
+  while (!error && param->sockfd)
   {
-    if (!param->sockfd)
-    {
-      break;
-    }
     BaseType_t ok = xQueueReceive(param->queue, &tx_buffer, (TickType_t)10);
-    int to_write, len;
+    size_t to_write, len;
     to_write = len = strlen(tx_buffer);
-    while (to_write > 0 && ok == pdTRUE)
+    while (!error && to_write > 0 && ok == pdTRUE) // TODO: Figure aout how to make it cleaner
     {
-      int written = send(param->sockfd, tx_buffer + (len - to_write), to_write, 0);
+      ssize_t written = send(param->sockfd, tx_buffer + (len - to_write), to_write, 0);
       if (written < 0)
       {
         ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+        error = true;
       }
       to_write -= written;
     }
