@@ -2,3 +2,4 @@
 /hardware/firmware/build/
 /build/
 /.vscode
+/front/blackbox/package-lock.json
