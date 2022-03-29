@@ -28,7 +28,9 @@ Protocol uses websockets.
 
 ## Interface comunication
 
-### Describtion
+For now interface starts to send `simplified standard CAN PDUs` out of the box, as soon as it is connected to bus and computer
+
+<!-- ### Describtion
 
 Interface provides accesspoint with DHCP, DNS and TCP server. Client device connects to it and starts communication with handshake. After that connection mode has to be set with control frame.
 
@@ -87,6 +89,7 @@ Actions are used in control frames for configuring device. Actions can take up t
 | Acion       | Code | `PARAM` format                             |
 | ----------- | ---- | ------------------------------------------ |
 | Change mode | 0x01 | Mode code(16) \| Additional data(variable) |
+ -->
 
 ### Simplified standard CAN PDU
 

@@ -60,19 +60,19 @@ static void handle_send(void *task_param)
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
   char tx_buffer[200]; // TODO: chceck size
-  bool error = false;
+  bool error = false;  // TODO: Figure out how to make it cleaner
 
   while (!error && param->sockfd)
   {
     BaseType_t ok = xQueueReceive(param->queue, &tx_buffer, (TickType_t)10);
     size_t to_write, len;
     to_write = len = strlen(tx_buffer);
-    while (!error && to_write > 0 && ok == pdTRUE) // TODO: Figure aout how to make it cleaner
+    while (!error && to_write > 0 && ok == pdTRUE) // TODO: Figure out how to make it cleaner
     {
       ssize_t written = send(param->sockfd, tx_buffer + (len - to_write), to_write, 0);
       if (written < 0)
       {
-        ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+        ESP_LOGW(TAG, "Connection closed"); // TODO: check errno to find out
         error = true;
       }
       to_write -= written;
