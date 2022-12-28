@@ -1,0 +1,19 @@
+menu "iface0"
+
+    config IFACE0_SSID
+        string "IFACE0_SSID"
+        default "BusBunny"
+
+    config IFACE0_PASSWORD
+        string "IFACE0_PASSWORD"
+        default "12345678"
+
+    config IFACE0_PORT
+        int "IFACE0_PORT"
+        default "9002"
+
+    config IFACE0_CHANNEL
+        int "IFACE0_CHANNEL"
+        default 1
+
+endmenu
