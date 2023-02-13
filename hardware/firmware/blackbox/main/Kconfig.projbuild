@@ -1,19 +1,19 @@
-menu "iface0"
+menu "BusBunny/Network"
 
-    config IFACE0_SSID
-        string "IFACE0_SSID"
+    config WIFI_SSID
+        string "SSID"
         default "BusBunny"
 
-    config IFACE0_PASSWORD
-        string "IFACE0_PASSWORD"
-        default "12345678"
+    config WIFI_PASSWORD
+        string "Password"
+        default "BusBunn"
 
-    config IFACE0_PORT
-        int "IFACE0_PORT"
-        default "9002"
-
-    config IFACE0_CHANNEL
-        int "IFACE0_CHANNEL"
+    config WIFI_CHANNEL
+        int "WiFi channel"
         default 1
+
+    config WIFI_PORT
+        int "Port"
+        default "9002"
 
 endmenu

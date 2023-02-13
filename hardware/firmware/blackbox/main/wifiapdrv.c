@@ -9,7 +9,7 @@
 
 static const char *TAG = "wifi";
 
-void wifi_event_handler(void *arg, esp_event_base_t event_base,
+void wifiapdrv_event_handler(void *arg, esp_event_base_t event_base,
                         int32_t event_id, void *event_data)
 {
   if (event_id == WIFI_EVENT_AP_STACONNECTED)
@@ -26,7 +26,7 @@ void wifi_event_handler(void *arg, esp_event_base_t event_base,
   }
 }
 
-void wifi_init_ap()
+void wifiapdrv_create(uint8_t max_conn)
 {
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -42,12 +42,11 @@ void wifi_init_ap()
                                                       NULL));
 
   wifi_config_t wifi_config_ap = {
-      // Set configuration parameters for AP mode
       .ap = {
           .ssid = ESP_AP_SSID,
           .ssid_len = strlen(ESP_AP_SSID),
           .password = ESP_AP_PASS,
-          .max_connection = ESP_AP_MAX_CONNECT,
+          .max_connection = max_conn,
           .authmode = WIFI_AUTH_WPA_WPA2_PSK,
       },
   };
@@ -56,5 +55,5 @@ void wifi_init_ap()
   ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap));
   ESP_LOGI(TAG, "AccessPoint initialized");
 
-  ESP_ERROR_CHECK(esp_wifi_start()); // Start the Wifi driver
+  ESP_ERROR_CHECK(esp_wifi_start());
 }
