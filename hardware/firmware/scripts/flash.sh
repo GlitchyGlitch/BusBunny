@@ -9,6 +9,6 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 docker run --rm \
-  -v $SCRIPTPATH/blackbox:/blackbox -w /blackbox \
+  -v $SCRIPTPATH/../src:/src -w /src \
   --device /dev/ttyUSB0 \
   espressif/idf:release-v4.4 idf.py flash -p /dev/ttyUSB0

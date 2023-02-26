@@ -1,4 +1,4 @@
-/hardware/firmware/blackbox/build
+/hardware/firmware/src/build
 /hardware/firmware/build/
 /build/
 /.vscode
