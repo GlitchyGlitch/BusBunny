@@ -27,6 +27,6 @@ typedef struct net_queue
   netdrv_err_t err;
 } net_queue_t;
 
-netdrv_err_t netdrv_create(netdrv_t *net, ipstr_t ip, port_t port_t, size_t rx_buffer_size);
+netdrv_err_t netdrv_create(netdrv_t *net, ipstr_t ip, port_t port, size_t rx_buffer_size);
 netdrv_err_t netdrv_listen(netdrv_t *net);
 net_queue_t netdrv_accept(netdrv_t *net);

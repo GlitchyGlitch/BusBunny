@@ -1,4 +1,4 @@
-# BlackBox
+# BusBunny
 
 ## Versioning
 
@@ -100,3 +100,7 @@ Interface <-> Backend
 | --- | --- | --- | --- | --- | ---- |
 | ID  | RTR | IDE | ACK | DLC | DATA |
 ```
+
+
+# Interactive idf mode
+```docker run --rm -v $PWD:/blackbox -w /blackbox -it espressif/idf:release-v4.4```

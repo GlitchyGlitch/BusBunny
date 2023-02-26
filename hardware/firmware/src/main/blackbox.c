@@ -4,7 +4,7 @@
 
 #include "netdrv.h"
 #include "system.h"
-#include "wifi.h"
+#include "wifiapdrv.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -15,17 +15,22 @@
 #include "nvs_flash.h"
 
 static const char *TAG = "main";
-#define PORT 9000
+#define SSID CONFIG_WIFI_SSID
+#define PASSWORD CONFIG_WIFI_PASSWORD
+#define IP "10.0.0.1"
+#define CHANNEL CONFIG_WIFI_CHANNEL
+#define PORT CONFIG_WIFI_PORT
+#define MAX_CONN CONFIG_WIFI_MAX_CONN
 
 void app_main()
 {
   // TODO: make this reconnectable
   ESP_ERROR_CHECK(nvs_flash_init());
-  wifi_init_ap();
+  wifiapdrv_create((ssidstr_t){SSID}, (passwdstr_t){PASSWORD}, MAX_CONN);
 
   netdrv_t net;
   netdrv_create(
-      &net, (ipstr_t){"0.0.0.0"}, PORT, 128);
+      &net, (ipstr_t){IP}, PORT, 128);
   netdrv_listen(&net);
 
   net_queue_t queue;

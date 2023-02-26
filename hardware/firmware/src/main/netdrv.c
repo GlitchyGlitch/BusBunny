@@ -88,12 +88,11 @@ static void handle_send(void *task_param)
 }
 
 netdrv_err_t
-netdrv_create(netdrv_t *net, ipstr_t ip, uint16_t port, size_t rx_buffer_size)
+netdrv_create(netdrv_t *net, ipstr_t ip, port_t port, size_t rx_buffer_size)
 {
   net->ip = ip;
   net->rx_buffer_size = rx_buffer_size;
-  // inet_ntoa_r(net->dst_addr.sin_addr, net->ip.bytes, sizeof(ip) - 1);
-  net->dst_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  net->dst_addr.sin_addr.s_addr = ip.bytes;
   net->dst_addr.sin_family = AF_INET;   // Define address family as Ipv4
   net->dst_addr.sin_port = htons(port); // Define PORT
 
