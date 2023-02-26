@@ -6,3 +6,6 @@ menuconfig-firmwere:
 
 cleanup-firmwere:
 	./hardware/firmware/scripts/cleanup.sh
+
+flash-firmware:
+	./hardware/firmware/scripts/flash.sh
