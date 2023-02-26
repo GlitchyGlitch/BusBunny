@@ -14,7 +14,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-static const char *TAG = "main";
+static const char *TAG = "main"; //unused
 #define SSID CONFIG_WIFI_SSID
 #define PASSWORD CONFIG_WIFI_PASSWORD
 #define IP CONFIG_WIFI_IP
