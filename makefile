@@ -8,4 +8,4 @@ cleanup-firmwere:
 	./hardware/firmware/scripts/cleanup.sh
 
 flash-firmware:
-	./hardware/firmware/scripts/flash.sh
+	./hardware/firmware/scripts/flash.shhardware/firmware/scripts/flash.sh
