@@ -14,7 +14,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-static const char *TAG = "main"; //unused
+static const char *TAG = "main"; // unused 
 #define SSID CONFIG_WIFI_SSID
 #define PASSWORD CONFIG_WIFI_PASSWORD
 #define IP CONFIG_WIFI_IP
@@ -44,11 +44,14 @@ void app_main()
 
   for (;;)
   {
-    BaseType_t ok = xQueueReceive(queue.queue_recv, &rx_buffer, (TickType_t)10);
-    if (ok == pdTRUE)
-    {
-      xQueueSend(queue.queue_send, (void *)&rx_buffer, 10);
-    }
+    // BaseType_t ok = xQueueReceive(queue.queue_recv, &rx_buffer, (TickType_t)10);
+    // if (ok == pdTRUE)
+    // {
+    net_msg_t msg;
+    msg.size = 6;
+    memcpy(msg.data, "\x00\x22asdf", msg.size);
+    xQueueSend(queue.queue_send, (void *)&msg, 10);
+    // }
 
     // TODO: program is stuck here
   }

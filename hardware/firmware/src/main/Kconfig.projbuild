@@ -6,7 +6,7 @@ menu "BusBunny/Network"
 
     config WIFI_PASSWORD
         string "Password"
-        default "BusBunn"
+        default "12345678"
 
     config WIFI_CHANNEL
         int "Channel"

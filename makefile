@@ -9,3 +9,6 @@ cleanup-firmwere:
 
 flash-firmware:
 	./hardware/firmware/scripts/flash.sh
+
+test-firmware:
+	python3 ./hardware/firmware/src/tests/test.py

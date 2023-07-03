@@ -18,6 +18,21 @@ typedef struct net_task_param
   sockfd_t sockfd;
 } net_task_param_t;
 
+/// @brief Turn struct into byte array ready to send over network
+/// @param msg Message struct
+/// @return Remember to free buffer after using method!
+net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg)
+{
+  net_raw_msg_t *raw_msg = malloc(sizeof(net_raw_msg_t));
+  (*raw_msg)[0] = msg.size;
+  if (memcpy(&raw_msg[1], msg.data, 255) != ESP_OK) {
+    esp_panic()
+  }
+  return raw_msg;
+}
+
+
+
 // TODO: prevent reset on return
 
 static void handle_recv(void *task_param)
@@ -25,7 +40,7 @@ static void handle_recv(void *task_param)
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
   ssize_t rx_len = 0;
-  char rx_buffer[128];
+  char rx_buffer[128]; // TODO: Export this as kconfig
 
   do
   {
@@ -44,7 +59,7 @@ static void handle_recv(void *task_param)
     }
     else
     { // TODO: bzero buffer maybe
-      rx_buffer[rx_len] = 0;
+      rx_buffer[rx_len] = 0; // TODO: Why? For string? Not necessary?
       xQueueSend(param->queue, (void *)&rx_buffer, 10);
     }
   } while (rx_len > 0);
@@ -60,24 +75,26 @@ static void handle_send(void *task_param)
 {
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
-  char tx_buffer[200]; // TODO: chceck size
+
   bool error = false;  // TODO: Figure out how to make it cleaner
+  net_msg_t *msg_buffer = malloc(sizeof(net_msg_t));
 
   while (!error && param->sockfd)
   {
-    BaseType_t ok = xQueueReceive(param->queue, &tx_buffer, (TickType_t)10);
-    size_t to_write, len;
-    to_write = len = strlen(tx_buffer);
-    while (!error && to_write > 0 && ok == pdTRUE) // TODO: Figure out how to make it cleaner
+    BaseType_t ok = xQueueReceive(param->queue, msg_buffer, (TickType_t)10); // TODO: send struct over queue
+    net_raw_msg_t *ready_msg = netdrv_serialize_msg(*msg_buffer);
+    while (!error && ready_msg > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner 
     {
-      ssize_t written = send(param->sockfd, tx_buffer + (len - to_write), to_write, 0);
-      if (written < 0)
+      ssize_t sent = send(param->sockfd, ready_msg, 64, 0);
+      if (sent < 0)
       {
         ESP_LOGW(TAG, "Connection closed"); // TODO: check errno to find out
         error = true;
+        esp_free(ready_msg);
       }
-      to_write -= written;
+      ready_msg -= sent;
     }
+    esp_free(ready_msg);
   }
 
   shutdown(param->sockfd, 0);
@@ -148,8 +165,8 @@ net_queue_t netdrv_accept(netdrv_t *net)
     return ret;
   }
 
-  QueueHandle_t queue_recv = xQueueCreate(30, 128);
-  QueueHandle_t queue_send = xQueueCreate(30, 128);
+  QueueHandle_t queue_recv = xQueueCreate(30, 256);
+  QueueHandle_t queue_send = xQueueCreate(30, 256);
 
   net_task_param_t *task_param_recv = (net_task_param_t *)malloc(sizeof(net_task_param_t));
   net_task_param_t *task_param_send = (net_task_param_t *)malloc(sizeof(net_task_param_t));
