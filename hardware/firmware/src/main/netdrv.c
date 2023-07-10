@@ -24,14 +24,10 @@ typedef struct net_task_param
 net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg)
 {
   net_raw_msg_t *raw_msg = malloc(sizeof(net_raw_msg_t));
-  (*raw_msg)[0] = msg.size;
-  if (memcpy(&raw_msg[1], msg.data, 255) != ESP_OK) {
-    esp_panic()
-  }
+  (*raw_msg)[0] = (char)msg.size;
+  memcpy(&(*raw_msg)[1], msg.data, msg.size);
   return raw_msg;
 }
-
-
 
 // TODO: prevent reset on return
 
@@ -71,28 +67,32 @@ static void handle_recv(void *task_param)
   vTaskDelete(NULL);
 }
 
-static void handle_send(void *task_param)
+static void handle_send(void *task_param) // TODO: On heavy load, sometimes two messages are interpreted as one
 {
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
 
-  bool error = false;  // TODO: Figure out how to make it cleaner
-  net_msg_t *msg_buffer = malloc(sizeof(net_msg_t));
+  bool error = false;
+  net_msg_t msg_buffer;
 
-  while (!error && param->sockfd)
+  while (!error && param->sockfd > 0)
   {
-    BaseType_t ok = xQueueReceive(param->queue, msg_buffer, (TickType_t)10); // TODO: send struct over queue
-    net_raw_msg_t *ready_msg = netdrv_serialize_msg(*msg_buffer);
-    while (!error && ready_msg > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner 
+    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, (TickType_t)10); // TODO: send struct over queue
+    net_raw_msg_t *ready_msg = netdrv_serialize_msg(msg_buffer);
+    uint16_t ready_msg_len = msg_buffer.size + 1;
+    ESP_LOGI("Tag", "Zawartość bufora: %s", msg_buffer.data);
+    // TODO: Rethink this shit!
+    while (!error && ready_msg_len > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner -> comparison of pointer with zero
     {
-      ssize_t sent = send(param->sockfd, ready_msg, 64, 0);
+      ssize_t sent = send(param->sockfd, ready_msg, ready_msg_len, 0); // FIXME his panicing here
       if (sent < 0)
       {
-        ESP_LOGW(TAG, "Connection closed"); // TODO: check errno to find out
+
+        ESP_LOGE(TAG, "Error during send"); // TODO: check errno to find out
         error = true;
         esp_free(ready_msg);
       }
-      ready_msg -= sent;
+      ready_msg_len -= sent;
     }
     esp_free(ready_msg);
   }
@@ -165,8 +165,8 @@ net_queue_t netdrv_accept(netdrv_t *net)
     return ret;
   }
 
-  QueueHandle_t queue_recv = xQueueCreate(30, 256);
-  QueueHandle_t queue_send = xQueueCreate(30, 256);
+  QueueHandle_t queue_recv = xQueueCreate(30, sizeof(net_msg_t));
+  QueueHandle_t queue_send = xQueueCreate(30, sizeof(net_msg_t));
 
   net_task_param_t *task_param_recv = (net_task_param_t *)malloc(sizeof(net_task_param_t));
   net_task_param_t *task_param_send = (net_task_param_t *)malloc(sizeof(net_task_param_t));

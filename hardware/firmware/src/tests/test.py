@@ -26,14 +26,15 @@ def test_binary_loopback_with_zeros():
         print("[+] Passed!")
 
 def test():
-    data = b"\x00\x22asdf"
+    print("Test entered")
+    data = b"\x05\x00asdf"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        received = s.recv(1024)
-    
-    print(data, received)
-    if data == received:
-        print("[+] Passed!")
+        for _ in range(1024):
+            received = s.recv(1024)
+            print(data, received)
+            if data == received:
+                print("[+] Passed!")
 
 if __name__ == "__main__":
     print("You need to have the device with your firmwere atached!")

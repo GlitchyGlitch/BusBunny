@@ -24,6 +24,8 @@ static const char *TAG = "main"; // unused
 
 void app_main()
 {
+  ESP_LOGE("DEBUG","Hello, here i'm;");
+
   // TODO: make this reconnectable
   ESP_ERROR_CHECK(nvs_flash_init());
   wifiapdrv_create((ssidstr_t){SSID}, (passwdstr_t){PASSWORD}, MAX_CONN);
@@ -32,7 +34,7 @@ void app_main()
   netdrv_create(
       &net, (ipstr_t){IP}, PORT, 128);
   netdrv_listen(&net);
-
+  
   net_queue_t queue;
   char rx_buffer[200]; // TODO: chceck size
   queue = netdrv_accept(&net);
@@ -48,9 +50,12 @@ void app_main()
     // if (ok == pdTRUE)
     // {
     net_msg_t msg;
-    msg.size = 6;
-    memcpy(msg.data, "\x00\x22asdf", msg.size);
-    xQueueSend(queue.queue_send, (void *)&msg, 10);
+
+    msg.size = 5;
+    const unsigned char data[] = {0x00, 'a', 's', 'd', 'f'};
+
+    memcpy(msg.data, data, msg.size);
+    xQueueSend(queue.queue_send, &msg, 10);
     // }
 
     // TODO: program is stuck here

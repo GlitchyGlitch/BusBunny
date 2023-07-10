@@ -33,7 +33,7 @@ typedef struct net_msg
   char data[255];
 } net_msg_t;
 
-typedef uint32_t net_raw_msg_t[256];
+typedef char net_raw_msg_t[256];
 net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg);
 netdrv_err_t netdrv_create(netdrv_t *net, ipstr_t ip, port_t port, size_t rx_buffer_size);
 netdrv_err_t netdrv_listen(netdrv_t *net);

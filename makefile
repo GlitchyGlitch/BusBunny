@@ -12,3 +12,6 @@ flash-firmware:
 
 test-firmware:
 	python3 ./hardware/firmware/src/tests/test.py
+
+run-app-dev:
+	cargo tauri dev
