@@ -1,16 +1,14 @@
 #include <string.h>
 
+#include "wifiapdrv.h"
+
 #include "esp_wifi.h"
 #include "esp_log.h"
 
-#define ESP_AP_SSID "BlackBox" // Ssid for ESP32 access point
-#define ESP_AP_PASS "BlackBox" // password for ESP32 access point
-#define ESP_AP_MAX_CONNECT 1   // Maximum stations that can connect to ESP32
+static const char *TAG = "wifiapdrv";
 
-static const char *TAG = "wifi";
-
-void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                        int32_t event_id, void *event_data)
+void wifiapdrv_event_handler(void *arg, esp_event_base_t event_base,
+                             int32_t event_id, void *event_data)
 {
   if (event_id == WIFI_EVENT_AP_STACONNECTED)
   {
@@ -26,7 +24,7 @@ void wifi_event_handler(void *arg, esp_event_base_t event_base,
   }
 }
 
-void wifi_init_ap()
+void wifiapdrv_create(ssidstr_t ssid, passwdstr_t passwd, uint8_t max_conn)
 {
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -37,24 +35,23 @@ void wifi_init_ap()
 
   ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                       ESP_EVENT_ANY_ID,
-                                                      &wifi_event_handler,
+                                                      &wifiapdrv_event_handler,
                                                       NULL,
                                                       NULL));
 
+
   wifi_config_t wifi_config_ap = {
-      // Set configuration parameters for AP mode
       .ap = {
-          .ssid = ESP_AP_SSID,
-          .ssid_len = strlen(ESP_AP_SSID),
-          .password = ESP_AP_PASS,
-          .max_connection = ESP_AP_MAX_CONNECT,
+          .max_connection = max_conn,
           .authmode = WIFI_AUTH_WPA_WPA2_PSK,
       },
   };
+  strncpy((char *)wifi_config_ap.sta.ssid, ssid.bytes, 32);
+  strncpy((char *)wifi_config_ap.sta.password, passwd.bytes, 64);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
   ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config_ap));
   ESP_LOGI(TAG, "AccessPoint initialized");
 
-  ESP_ERROR_CHECK(esp_wifi_start()); // Start the Wifi driver
+  ESP_ERROR_CHECK(esp_wifi_start());
 }

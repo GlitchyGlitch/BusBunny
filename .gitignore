@@ -1,5 +1,6 @@
-/hardware/firmware/blackbox/build
+/hardware/firmware/src/build
 /hardware/firmware/build/
 /build/
 /.vscode
 /front/blackbox/package-lock.json
+/esp-idf

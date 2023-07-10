@@ -11,11 +11,23 @@
 #include "lwip/sockets.h"
 
 static const char *TAG = "netdrv";
+
 typedef struct net_task_param
 {
   QueueHandle_t queue;
   sockfd_t sockfd;
 } net_task_param_t;
+
+/// @brief Turn struct into byte array ready to send over network
+/// @param msg Message struct
+/// @return Remember to free buffer after using method!
+net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg)
+{
+  net_raw_msg_t *raw_msg = malloc(sizeof(net_raw_msg_t));
+  (*raw_msg)[0] = (char)msg.size;
+  memcpy(&(*raw_msg)[1], msg.data, msg.size);
+  return raw_msg;
+}
 
 // TODO: prevent reset on return
 
@@ -24,7 +36,7 @@ static void handle_recv(void *task_param)
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
   ssize_t rx_len = 0;
-  char rx_buffer[128];
+  char rx_buffer[128]; // TODO: Export this as kconfig
 
   do
   {
@@ -43,7 +55,7 @@ static void handle_recv(void *task_param)
     }
     else
     { // TODO: bzero buffer maybe
-      rx_buffer[rx_len] = 0;
+      rx_buffer[rx_len] = 0; // TODO: Why? For string? Not necessary?
       xQueueSend(param->queue, (void *)&rx_buffer, 10);
     }
   } while (rx_len > 0);
@@ -55,28 +67,34 @@ static void handle_recv(void *task_param)
   vTaskDelete(NULL);
 }
 
-static void handle_send(void *task_param)
+static void handle_send(void *task_param) // TODO: On heavy load, sometimes two messages are interpreted as one
 {
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
-  char tx_buffer[200]; // TODO: chceck size
-  bool error = false;  // TODO: Figure out how to make it cleaner
 
-  while (!error && param->sockfd)
+  bool error = false;
+  net_msg_t msg_buffer;
+
+  while (!error && param->sockfd > 0)
   {
-    BaseType_t ok = xQueueReceive(param->queue, &tx_buffer, (TickType_t)10);
-    size_t to_write, len;
-    to_write = len = strlen(tx_buffer);
-    while (!error && to_write > 0 && ok == pdTRUE) // TODO: Figure out how to make it cleaner
+    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, (TickType_t)10); // TODO: send struct over queue
+    net_raw_msg_t *ready_msg = netdrv_serialize_msg(msg_buffer);
+    uint16_t ready_msg_len = msg_buffer.size + 1;
+    ESP_LOGI("Tag", "Zawartość bufora: %s", msg_buffer.data);
+    // TODO: Rethink this shit!
+    while (!error && ready_msg_len > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner -> comparison of pointer with zero
     {
-      ssize_t written = send(param->sockfd, tx_buffer + (len - to_write), to_write, 0);
-      if (written < 0)
+      ssize_t sent = send(param->sockfd, ready_msg, ready_msg_len, 0); // FIXME his panicing here
+      if (sent < 0)
       {
-        ESP_LOGW(TAG, "Connection closed"); // TODO: check errno to find out
+
+        ESP_LOGE(TAG, "Error during send"); // TODO: check errno to find out
         error = true;
+        esp_free(ready_msg);
       }
-      to_write -= written;
+      ready_msg_len -= sent;
     }
+    esp_free(ready_msg);
   }
 
   shutdown(param->sockfd, 0);
@@ -87,12 +105,13 @@ static void handle_send(void *task_param)
 }
 
 netdrv_err_t
-netdrv_create(netdrv_t *net, ipstr_t ip, uint16_t port, size_t rx_buffer_size)
+netdrv_create(netdrv_t *net, ipstr_t ip, port_t port, size_t rx_buffer_size)
 {
+  // TODO: reconfigure DHCP
+
   net->ip = ip;
   net->rx_buffer_size = rx_buffer_size;
-  // inet_ntoa_r(net->dst_addr.sin_addr, net->ip.bytes, sizeof(ip) - 1);
-  net->dst_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  net->dst_addr.sin_addr.s_addr = inet_addr(ip.bytes);
   net->dst_addr.sin_family = AF_INET;   // Define address family as Ipv4
   net->dst_addr.sin_port = htons(port); // Define PORT
 
@@ -146,8 +165,8 @@ net_queue_t netdrv_accept(netdrv_t *net)
     return ret;
   }
 
-  QueueHandle_t queue_recv = xQueueCreate(30, 128);
-  QueueHandle_t queue_send = xQueueCreate(30, 128);
+  QueueHandle_t queue_recv = xQueueCreate(30, sizeof(net_msg_t));
+  QueueHandle_t queue_send = xQueueCreate(30, sizeof(net_msg_t));
 
   net_task_param_t *task_param_recv = (net_task_param_t *)malloc(sizeof(net_task_param_t));
   net_task_param_t *task_param_send = (net_task_param_t *)malloc(sizeof(net_task_param_t));

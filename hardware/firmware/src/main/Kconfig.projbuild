@@ -1,0 +1,27 @@
+menu "BusBunny/Network"
+
+    config WIFI_SSID
+        string "SSID"
+        default "BusBunny"
+
+    config WIFI_PASSWORD
+        string "Password"
+        default "12345678"
+
+    config WIFI_CHANNEL
+        int "Channel"
+        default 1
+
+    config WIFI_MAX_CONN
+        int "Max connections"
+        default "1"
+
+    config WIFI_IP
+        string "IP"
+        default "0.0.0.0"
+
+    config WIFI_PORT
+        int "Port"
+        default "9002"
+
+endmenu
