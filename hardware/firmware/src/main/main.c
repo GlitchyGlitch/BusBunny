@@ -24,8 +24,6 @@ static const char *TAG = "main"; // unused
 
 void app_main()
 {
-  ESP_LOGE("DEBUG","Hello, here i'm;");
-
   // TODO: make this reconnectable
   ESP_ERROR_CHECK(nvs_flash_init());
   wifiapdrv_create((ssidstr_t){SSID}, (passwdstr_t){PASSWORD}, MAX_CONN);
@@ -36,28 +34,22 @@ void app_main()
   netdrv_listen(&net);
   
   net_queue_t queue;
-  char rx_buffer[200]; // TODO: chceck size
   queue = netdrv_accept(&net);
+  ESP_LOGE("DEBUG","Hello, here i'm;");
   if (queue.err != NETDRV_OK)
   {
     esp_panic();
   }
-  // TODO: message as struct
 
   for (;;)
   {
-    // BaseType_t ok = xQueueReceive(queue.queue_recv, &rx_buffer, (TickType_t)10);
-    // if (ok == pdTRUE)
-    // {
     net_msg_t msg;
+    BaseType_t ok = xQueueReceive(queue.queue_recv, &msg, 10);
 
-    msg.size = 5;
-    const unsigned char data[] = {0x00, 'a', 's', 'd', 'f'};
-
-    memcpy(msg.data, data, msg.size);
-    xQueueSend(queue.queue_send, &msg, 10);
-    // }
-
-    // TODO: program is stuck here
+    if (ok == pdTRUE)
+    {
+      xQueueSend(queue.queue_send, &msg, 10);
+    }
   }
+
 }
