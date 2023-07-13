@@ -29,6 +29,14 @@ net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg)
   return raw_msg;
 }
 
+net_msg_t netdrv_deserialize_msg(net_raw_msg_t *raw_msg)
+{
+  net_msg_t msg;
+  msg.size = (int)(*raw_msg)[0];
+  memcpy(msg.data, &(*raw_msg)[1], msg.size);
+  return msg;
+}
+
 // TODO: prevent reset on return
 
 static void handle_recv(void *task_param)
@@ -36,13 +44,12 @@ static void handle_recv(void *task_param)
   net_task_param_t *param;
   param = (net_task_param_t *)task_param;
   ssize_t rx_len = 0;
-  char rx_buffer[128]; // TODO: Export this as kconfig
-
+  net_raw_msg_t raw_msg;
   do
   {
     if (param->sockfd)
     {
-      rx_len = recv(param->sockfd, rx_buffer, sizeof(rx_buffer) - 1, 0);
+      rx_len += recv(param->sockfd, raw_msg, sizeof(raw_msg) - 1, 0); // TODO: Why -1? whyy?
     }
 
     if (rx_len < 0)
@@ -54,9 +61,12 @@ static void handle_recv(void *task_param)
       ESP_LOGW(TAG, "Connection closed");
     }
     else
-    { // TODO: bzero buffer maybe
-      rx_buffer[rx_len] = 0; // TODO: Why? For string? Not necessary?
-      xQueueSend(param->queue, (void *)&rx_buffer, 10);
+    {
+      ESP_LOGE("DEBUG", "%s", raw_msg);
+      ESP_LOGE("DEBUG", "%s", raw_msg);
+
+      net_msg_t msg = netdrv_deserialize_msg(&raw_msg);
+      xQueueSend(param->queue, &msg, 10); //TODO: Here it exits?
     }
   } while (rx_len > 0);
 
@@ -153,7 +163,6 @@ netdrv_err_t netdrv_listen(netdrv_t *net)
 
 net_queue_t netdrv_accept(netdrv_t *net)
 {
-  // TODO track down exact size of packet and adjust values of reveive length and stack size
   net_queue_t ret = (net_queue_t){NULL, NULL, NETDRV_ERR_ACCEPT};
   struct sockaddr_in client_addr;
   size_t client_addr_len = sizeof(client_addr);

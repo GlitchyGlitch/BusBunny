@@ -18,12 +18,14 @@ def test_binary_loopback_with_zeros():
     data = b"\x08hell\x00\x11oo"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        s.send(data)
-        received = s.recv(1024)
-    
-    print(data, received)
-    if data == received:
-        print("[+] Passed!")
+        while True:
+            s.send(data)
+            print("[+] Sent!")
+            received = s.recv(1024)
+            print("[+] Received!")
+            print(data, received)
+            if data == received:
+                print("[+] Passed!")
 
 def test():
     print("Test entered")
@@ -38,4 +40,4 @@ def test():
 
 if __name__ == "__main__":
     print("You need to have the device with your firmwere atached!")
-    test()
+    test_binary_loopback_with_zeros()
