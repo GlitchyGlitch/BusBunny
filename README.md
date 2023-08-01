@@ -26,17 +26,17 @@ Protocol uses websockets.
 }
 ```
 
-## Interface comunication
+## Interface communication
 
 For now interface starts to send `simplified standard CAN PDUs` out of the box, as soon as it is connected to bus and computer
 
-<!-- ### Describtion
+<!-- ### Description
 
 Interface provides accesspoint with DHCP, DNS and TCP server. Client device connects to it and starts communication with handshake. After that connection mode has to be set with control frame.
 
 ### Handshake
 
-Interface -> Bakcend
+Interface -> Backend
 
 ```
 | 16  | 16  | 16  | 128    |

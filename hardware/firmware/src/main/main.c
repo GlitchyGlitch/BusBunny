@@ -30,26 +30,32 @@ void app_main()
 
   netdrv_t net;
   netdrv_create(
-      &net, (ipstr_t){IP}, PORT, 128);
+      &net, (netdrv_ipstr_t){IP}, PORT, 128);
   netdrv_listen(&net);
   
-  net_queue_t queue;
+  netdrv_queue_t queue;
   queue = netdrv_accept(&net);
-  ESP_LOGE("DEBUG","Hello, here i'm;");
+  ESP_LOGE("DEBUG", "Hello, here i'm;");
   if (queue.err != NETDRV_OK)
   {
+    ESP_LOGE("DEBUG", "Panicout");
     esp_panic();
   }
 
   for (;;)
   {
-    net_msg_t msg;
-    BaseType_t ok = xQueueReceive(queue.queue_recv, &msg, 10);
-
+    netdrv_msg_t msg;
+    ESP_LOGE("DEBUG", "In loop");
+    BaseType_t ok = xQueueReceive(queue.queue_recv, &msg, 100);
+    ESP_LOGE("DEBUG","recv");
+    
     if (ok == pdTRUE)
     {
-      xQueueSend(queue.queue_send, &msg, 10);
-    }
+        ESP_LOGE("DEBUG","send");
+
+      xQueueSend(queue.queue_send, &msg, 100);
+    } else return;
+
   }
 
 }

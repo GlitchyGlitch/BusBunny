@@ -12,44 +12,36 @@
 
 static const char *TAG = "netdrv";
 
-typedef struct net_task_param
-{
-  QueueHandle_t queue;
-  sockfd_t sockfd;
-} net_task_param_t;
-
 /// @brief Turn struct into byte array ready to send over network
 /// @param msg Message struct
 /// @return Remember to free buffer after using method!
-net_raw_msg_t *netdrv_serialize_msg(net_msg_t msg)
+static netdrv_raw_msg_t *netdrv_serialize_msg(netdrv_msg_t msg)
 {
-  net_raw_msg_t *raw_msg = malloc(sizeof(net_raw_msg_t));
+  netdrv_raw_msg_t *raw_msg = malloc(sizeof(netdrv_raw_msg_t));
   (*raw_msg)[0] = (char)msg.size;
   memcpy(&(*raw_msg)[1], msg.data, msg.size);
   return raw_msg;
 }
 
-net_msg_t netdrv_deserialize_msg(net_raw_msg_t *raw_msg)
+static netdrv_msg_t netdrv_deserialize_msg(netdrv_raw_msg_t *raw_msg)
 {
-  net_msg_t msg;
+  netdrv_msg_t msg;
   msg.size = (int)(*raw_msg)[0];
   memcpy(msg.data, &(*raw_msg)[1], msg.size);
   return msg;
 }
 
-// TODO: prevent reset on return
-
 static void handle_recv(void *task_param)
 {
-  net_task_param_t *param;
-  param = (net_task_param_t *)task_param;
+  netdrv_task_param_t *param = (netdrv_task_param_t *)task_param;
+  netdrv_raw_msg_t raw_msg;
   ssize_t rx_len = 0;
-  net_raw_msg_t raw_msg;
   do
   {
     if (param->sockfd)
     {
-      rx_len += recv(param->sockfd, raw_msg, sizeof(raw_msg) - 1, 0); // TODO: Why -1? whyy?
+      rx_len = recv(param->sockfd, raw_msg, sizeof(raw_msg), 0);
+      ESP_LOGE("DEBUG", "received %s", raw_msg);
     }
 
     if (rx_len < 0)
@@ -58,15 +50,13 @@ static void handle_recv(void *task_param)
     }
     else if (rx_len == 0)
     {
-      ESP_LOGW(TAG, "Connection closed");
+      ESP_LOGW(TAG, "Connection closed %d", rx_len);
     }
     else
     {
       ESP_LOGE("DEBUG", "%s", raw_msg);
-      ESP_LOGE("DEBUG", "%s", raw_msg);
-
-      net_msg_t msg = netdrv_deserialize_msg(&raw_msg);
-      xQueueSend(param->queue, &msg, 10); //TODO: Here it exits?
+      netdrv_msg_t msg = netdrv_deserialize_msg(&raw_msg);
+      xQueueSend(param->queue, &msg, 100); //TODO: Here it exits?
     }
   } while (rx_len > 0);
 
@@ -79,27 +69,25 @@ static void handle_recv(void *task_param)
 
 static void handle_send(void *task_param) // TODO: On heavy load, sometimes two messages are interpreted as one
 {
-  net_task_param_t *param;
-  param = (net_task_param_t *)task_param;
+  netdrv_task_param_t *param = (netdrv_task_param_t *)task_param;
 
   bool error = false;
-  net_msg_t msg_buffer;
+  netdrv_msg_t msg_buffer;
 
   while (!error && param->sockfd > 0)
   {
-    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, (TickType_t)10); // TODO: send struct over queue
-    net_raw_msg_t *ready_msg = netdrv_serialize_msg(msg_buffer);
+    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, 100); // TODO: send struct over queue
+    netdrv_raw_msg_t *ready_msg = netdrv_serialize_msg(msg_buffer);
     uint16_t ready_msg_len = msg_buffer.size + 1;
     ESP_LOGI("Tag", "Zawartość bufora: %s", msg_buffer.data);
     // TODO: Rethink this shit!
-    while (!error && ready_msg_len > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner -> comparison of pointer with zero
+    while (ready_msg_len > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner -> comparison of pointer with zero
     {
       ssize_t sent = send(param->sockfd, ready_msg, ready_msg_len, 0); // FIXME his panicing here
-      if (sent < 0)
+      if (sent <= 0)
       {
-
         ESP_LOGE(TAG, "Error during send"); // TODO: check errno to find out
-        error = true;
+        // xSemaphoreTake(param->err_semaphore, 100);
         esp_free(ready_msg);
       }
       ready_msg_len -= sent;
@@ -114,8 +102,25 @@ static void handle_send(void *task_param) // TODO: On heavy load, sometimes two 
   vTaskDelete(NULL);
 }
 
-netdrv_err_t
-netdrv_create(netdrv_t *net, ipstr_t ip, port_t port, size_t rx_buffer_size)
+static void handle_sv(void *task_param)
+{
+  netdrv_task_param_t *param = (netdrv_task_param_t *)task_param;
+
+  for(;;)
+  {
+    ESP_LOGE("DEBUG", "noszku");
+
+    // if (xSemaphoreTake(param->err_semaphore, pdMS_TO_TICKS(100)) == pdTRUE)
+    // {
+    //   // vTaskDelete("netdrv_recv");
+    //   // vTaskDelete("netdrv_send ");
+    //   // vTaskDelete("netdrv_sv");
+    //   ESP_LOGE("DEBUG", "noszku");
+    // }
+  }
+}
+
+netdrv_err_t netdrv_create(netdrv_t *net, netdrv_ipstr_t ip, netdrv_port_t port, size_t rx_buffer_size)
 {
   // TODO: reconfigure DHCP
 
@@ -161,12 +166,14 @@ netdrv_err_t netdrv_listen(netdrv_t *net)
   return NETDRV_OK;
 }
 
-net_queue_t netdrv_accept(netdrv_t *net)
+netdrv_queue_t netdrv_accept(netdrv_t *net)
 {
-  net_queue_t ret = (net_queue_t){NULL, NULL, NETDRV_ERR_ACCEPT};
+  netdrv_queue_t ret = (netdrv_queue_t){NULL, NULL, NETDRV_ERR_ACCEPT};
   struct sockaddr_in client_addr;
   size_t client_addr_len = sizeof(client_addr);
-  sockfd_t client_sockfd = accept(net->sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+  netdrv_err_semaphore_handle_t err_semaphore = malloc(sizeof(err_semaphore)); // TODO: Remember to dealocate
+  err_semaphore = xSemaphoreCreateBinary();
+  netdrv_sockfd_t client_sockfd = accept(net->sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
 
   if (client_sockfd < 0)
   {
@@ -174,19 +181,28 @@ net_queue_t netdrv_accept(netdrv_t *net)
     return ret;
   }
 
-  QueueHandle_t queue_recv = xQueueCreate(30, sizeof(net_msg_t));
-  QueueHandle_t queue_send = xQueueCreate(30, sizeof(net_msg_t));
+  QueueHandle_t queue_recv = xQueueCreate(30, sizeof(netdrv_msg_t));
+  QueueHandle_t queue_send = xQueueCreate(30, sizeof(netdrv_msg_t));
 
-  net_task_param_t *task_param_recv = (net_task_param_t *)malloc(sizeof(net_task_param_t));
-  net_task_param_t *task_param_send = (net_task_param_t *)malloc(sizeof(net_task_param_t));
+  netdrv_task_param_t *task_param_recv = (netdrv_task_param_t *)malloc(sizeof(netdrv_task_param_t));
+  netdrv_task_param_t *task_param_send = (netdrv_task_param_t *)malloc(sizeof(netdrv_task_param_t));
+  netdrv_task_param_t *task_param_sv = (netdrv_task_param_t *)malloc(sizeof(netdrv_task_param_t));
+
 
   task_param_recv->queue = queue_recv;
   task_param_recv->sockfd = client_sockfd;
+  task_param_recv->err_semaphore = err_semaphore;
   task_param_send->queue = queue_send;
   task_param_send->sockfd = client_sockfd;
+  task_param_send->err_semaphore = err_semaphore;
+  task_param_sv->sockfd = client_sockfd;
+  task_param_sv->err_semaphore = err_semaphore;
 
-  xTaskCreate(handle_recv, "netdrv_recv", 61440, (void *)task_param_recv, 1, NULL);
-  xTaskCreate(handle_send, "netdrv_send", 4096, (void *)task_param_send, 1, NULL);
+
+  xTaskCreate(handle_recv, "netdrv_recv", 61440, (void *)task_param_recv, 20, NULL);
+  xTaskCreate(handle_send, "netdrv_send", 4096, (void *)task_param_send, 20, NULL);
+  xTaskCreate(handle_sv, "netdrv_sv", 2048, (void *)task_param_sv, 1, NULL);
+
 
   ret.queue_recv = queue_recv; // TODO: Check tasks and queues before returning them
   ret.queue_send = queue_send;
