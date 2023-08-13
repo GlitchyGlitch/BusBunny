@@ -12,9 +12,10 @@
 
 static const char *TAG = "netdrv";
 
+// PRIVATE
 /// @brief Turn struct into byte array ready to send over network
 /// @param msg Message struct
-/// @return Remember to free buffer after using method!
+/// @return Remember to free buffer after using function!
 static netdrv_raw_msg_t *netdrv_serialize_msg(netdrv_msg_t msg)
 {
   netdrv_raw_msg_t *raw_msg = malloc(sizeof(netdrv_raw_msg_t));
@@ -23,6 +24,9 @@ static netdrv_raw_msg_t *netdrv_serialize_msg(netdrv_msg_t msg)
   return raw_msg;
 }
 
+/// @brief Turn byte array into struct ready to process by system
+/// @param msg Byte buffer
+/// @return Remember to free after using function!
 static netdrv_msg_t netdrv_deserialize_msg(netdrv_raw_msg_t *raw_msg)
 {
   netdrv_msg_t msg;
@@ -31,35 +35,43 @@ static netdrv_msg_t netdrv_deserialize_msg(netdrv_raw_msg_t *raw_msg)
   return msg;
 }
 
+static ssize_t netdrv_send(netdrv_sockfd_t sockfd, netdrv_msg_t msg) {
+  netdrv_raw_msg_t *ready_msg = netdrv_serialize_msg(msg);
+  ssize_t bytes_sent = send(sockfd, ready_msg, msg.size+1, 0);
+  esp_free(ready_msg);
+  return bytes_sent;
+}
+
+// TASKS
 static void handle_recv(void *task_param)
 {
   netdrv_task_param_t *param = (netdrv_task_param_t *)task_param;
   netdrv_raw_msg_t raw_msg;
   ssize_t rx_len = 0;
-  do
+
+  for (;;)
   {
-    if (param->sockfd)
-    {
-      rx_len = recv(param->sockfd, raw_msg, sizeof(raw_msg), 0);
-      ESP_LOGE("DEBUG", "received %s", raw_msg);
-    }
+    rx_len = recv(param->sockfd, raw_msg, sizeof(raw_msg), 0);
 
     if (rx_len < 0)
     {
       ESP_LOGE(TAG, "Error occurred during receiving: errno %d", errno);
+      xSemaphoreGive(param->err_semaphore);
+      break;
     }
-    else if (rx_len == 0)
+    
+    if (rx_len == 0)
     {
       ESP_LOGW(TAG, "Connection closed %d", rx_len);
+      xSemaphoreGive(param->err_semaphore);
+      break;
     }
-    else
-    {
-      ESP_LOGE("DEBUG", "%s", raw_msg);
-      netdrv_msg_t msg = netdrv_deserialize_msg(&raw_msg);
-      xQueueSend(param->queue, &msg, 100); //TODO: Here it exits?
-    }
-  } while (rx_len > 0);
 
+    netdrv_msg_t msg = netdrv_deserialize_msg(&raw_msg);
+    xQueueSend(param->queue, &msg, 100);
+  }
+  
+  xSemaphoreGive(param->err_semaphore);
   shutdown(param->sockfd, 0);
   close(param->sockfd);
 
@@ -67,39 +79,30 @@ static void handle_recv(void *task_param)
   vTaskDelete(NULL);
 }
 
-static void handle_send(void *task_param) // TODO: On heavy load, sometimes two messages are interpreted as one
+static void handle_send(void *task_param)
 {
   netdrv_task_param_t *param = (netdrv_task_param_t *)task_param;
 
-  bool error = false;
   netdrv_msg_t msg_buffer;
 
-  while (!error && param->sockfd > 0)
+  for (;;)
   {
-    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, 100); // TODO: send struct over queue
-    netdrv_raw_msg_t *ready_msg = netdrv_serialize_msg(msg_buffer);
-    uint16_t ready_msg_len = msg_buffer.size + 1;
-    ESP_LOGI("Tag", "Zawartość bufora: %s", msg_buffer.data);
-    // TODO: Rethink this shit!
-    while (ready_msg_len > 0 && ok == pdTRUE) // FIXME: Figure out how to make it cleaner -> comparison of pointer with zero
+    BaseType_t ok = xQueueReceive(param->queue, &msg_buffer, 100);
+    
+    if (ok == pdFALSE)
     {
-      ssize_t sent = send(param->sockfd, ready_msg, ready_msg_len, 0); // FIXME his panicing here
-      if (sent <= 0)
-      {
-        ESP_LOGE(TAG, "Error during send"); // TODO: check errno to find out
-        // xSemaphoreTake(param->err_semaphore, 100);
-        esp_free(ready_msg);
-      }
-      ready_msg_len -= sent;
+      continue;
     }
-    esp_free(ready_msg);
+
+    if (netdrv_send(param->sockfd, msg_buffer) < 0)
+    {
+      ESP_LOGE(TAG, "Error during send");
+      break;
+    }
   }
-
-  shutdown(param->sockfd, 0);
-  close(param->sockfd);
-
+  xSemaphoreGive(param->err_semaphore);
   esp_free(param);
-  vTaskDelete(NULL);
+  vTaskSuspend(NULL);
 }
 
 static void handle_sv(void *task_param)
@@ -108,18 +111,17 @@ static void handle_sv(void *task_param)
 
   for(;;)
   {
-    ESP_LOGE("DEBUG", "noszku");
-
-    // if (xSemaphoreTake(param->err_semaphore, pdMS_TO_TICKS(100)) == pdTRUE)
-    // {
-    //   // vTaskDelete("netdrv_recv");
-    //   // vTaskDelete("netdrv_send ");
-    //   // vTaskDelete("netdrv_sv");
-    //   ESP_LOGE("DEBUG", "noszku");
-    // }
+    if (xSemaphoreTake(param->err_semaphore, pdMS_TO_TICKS(100)) == pdTRUE)
+    {
+      vTaskSuspend("netdrv_recv");
+      vTaskSuspend("netdrv_send ");
+      vTaskSuspend("netdrv_sv");
+      ESP_LOGE("DEBUG", "noszku");
+    }
   }
 }
 
+// PUBLIC
 netdrv_err_t netdrv_create(netdrv_t *net, netdrv_ipstr_t ip, netdrv_port_t port, size_t rx_buffer_size)
 {
   // TODO: reconfigure DHCP
@@ -199,8 +201,8 @@ netdrv_queue_t netdrv_accept(netdrv_t *net)
   task_param_sv->err_semaphore = err_semaphore;
 
 
-  xTaskCreate(handle_recv, "netdrv_recv", 61440, (void *)task_param_recv, 20, NULL);
-  xTaskCreate(handle_send, "netdrv_send", 4096, (void *)task_param_send, 20, NULL);
+  xTaskCreate(handle_recv, "netdrv_recv", 61440, (void *)task_param_recv, 200, NULL);
+  xTaskCreate(handle_send, "netdrv_send", 4096, (void *)task_param_send, 200, NULL);
   xTaskCreate(handle_sv, "netdrv_sv", 2048, (void *)task_param_sv, 1, NULL);
 
 

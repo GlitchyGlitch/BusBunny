@@ -18,7 +18,7 @@ def test_binary_loopback_with_zeros():
     data = b"\x08hell\x00\x11oo"
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        while True:
+        for x in range(1024):
             s.send(data)
             print("[+] Sent!")
             received = s.recv(1024)
