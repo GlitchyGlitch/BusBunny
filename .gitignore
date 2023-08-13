@@ -1,6 +1,9 @@
 /hardware/firmware/src/build
 /hardware/firmware/build/
 /build/
-/.vscode
+**/.vscode
 /front/blackbox/package-lock.json
 /esp-idf
+**/build/bin
+**/node_modules
+**/frontend/dist
