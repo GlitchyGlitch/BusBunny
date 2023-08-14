@@ -1,4 +1,4 @@
-module github.com/GlitchyGlitch/BlackBox/blackbox-back
+module github.com/Polar-Labs-RC/BusBunny
 
 go 1.18
 

@@ -105,4 +105,7 @@ Interface <-> Backend
 
 # Interactive idf mode
 ```docker run --rm -v $PWD:/blackbox -w /blackbox -it espressif/idf:release-v4.4```
+
+#FAQ
+To build app set node version to 18.0.0
  -->
