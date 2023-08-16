@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"embed"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -32,27 +34,21 @@ func NewFrontHandler(upgrader *websocket.Upgrader) func(w http.ResponseWriter, r
 
 		go wsc.WritePump()
 		go wsc.ReadPump()
+		var buffer bytes.Buffer
+		encoder := json.NewEncoder(&buffer)
+		var can CANRecord
+		can.CanId = "0FD"
+		can.Count = 26
+		can.Print = "asfgh"
+		can.Data = []string{"as", "as", "as", "as", "as", "as", "as", "as"}
+		encoder.Encode(can)
 		for {
-			err := wsc.Send([]byte(`{
-				"canId": "01F",
-				"count": 30,
-				"data": ["0A", "12", "BA", "0A", "..", "..", "..", ".."],
-				"print": ".Aśc.<"
-			}`))
+			err := wsc.Send(buffer.Bytes())
 			if err != nil {
+				println("here")
 				return
 			}
-			time.Sleep(4 * time.Millisecond)
-			err = wsc.Send([]byte(`{
-				"canId": "01E",
-				"count": 30,
-				"data": ["0A", "12", "BA", "0A", "..", "..", "..", ".."],
-				"print": ".Aśc.<"
-			}`))
-			if err != nil {
-				return
-			}
-			time.Sleep(4 * time.Millisecond)
+			time.Sleep(5 * time.Second)
 		}
 	}
 }

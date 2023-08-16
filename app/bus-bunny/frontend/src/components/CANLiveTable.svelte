@@ -6,7 +6,7 @@
     let headers = [
       { key: "count", value: "Ct", width: "48px"},
       { key: "id", value: "ID", width: "58px"},
-      { key: "b1", value: "01", width: "50px"},
+      { key: "b1", value: "01", width: "48px"},
       { key: "b2", value: "02", width: "48px"},
       { key: "b3", value: "03", width: "48px"},
       { key: "b4", value: "04", width: "48px"},
@@ -41,7 +41,7 @@
     }
 
     let convertCanFrame: (canFrame: string) => CanRecord = (canFrame: string) => {
-      let canFrameObj:CanPDU = JSON.parse(canFrame);
+      let canFrameObj: CanPDU = JSON.parse(canFrame);
       let result: CanRecord = {
         count: canFrameObj.count,
         id: canFrameObj.canId,
@@ -58,10 +58,7 @@
       return result
     }
 
-    onMount(() => {
-      ws = new WebSocket('ws://localhost:9825/front');
-  
-      ws.onmessage = event => {
+    let handle = (event) => {
         const canFrame = convertCanFrame(event.data);
         const index = messages.findIndex(f => f.id == canFrame.id);
         if (index == -1) {
@@ -70,6 +67,11 @@
         }
         messages[index] = canFrame;
       };
+
+    onMount(() => {
+      ws = new WebSocket('ws://localhost:9825/front');
+  
+      ws.addEventListener("message", handle);
     });
 
   
